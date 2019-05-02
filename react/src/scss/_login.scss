@@ -8,12 +8,37 @@
 
     .credentialsSwitchAction {
         float: right;
-        padding-top: 1.2em;
+        padding-top: 0.7em;
     }
 
-    .caption {
-        padding-bottom: 3em;
-    }
+	.thumbnail {
+		margin-bottom: 25px;
+		
+		.caption {
+			margin-bottom: inherit;
+			margin-right: 0.7em;
+			
+			.coreSpinner {
+				padding: 0.5em;
+				display: table;
+				margin-left: auto;
+				margin-right: auto;
+			}
+		}
+	}
+	
+	.header {
+		width: 100%;
+		background-color: $primary;
+		height: 3em;
+		
+		h3 {
+			font-size: 14pt;
+			color: white;
+			margin-left: 1em;
+			padding-top: 0.6em;
+		}
+	}
 	
 	min-width: 40vw;
 	margin-top: 13vh;

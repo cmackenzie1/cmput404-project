@@ -5,24 +5,25 @@ import _ from "lodash";
 
 import Actions from "./AuthActions";
 import RestUtil from "../util/RestUtil";
-import { SERVER_URL } from "../constants/ServerConstants";
+import { HOST_URL } from "../constants/ServerConstants";
 import CookieUtil from "../util/CookieUtil";
+
+import HomeActions from "../home/HomeActions";
 
 const getLoginStateFromCookies = () => {
     const cookies = cookie.parse(document.cookie),
         username = cookies["core-username"],
         id = cookies["core-userid"],
         password = cookies["core-password"],
-        url = `${SERVER_URL}/author/${id}`;
+        url = `${HOST_URL}/author/${id}`;
     if (!username || !id || !password) {
         return null;
     }
-    // TODO: is this how displayName should be handled?
     return {
         username: username,
         userInfo: {
             id: url,
-            host: SERVER_URL,
+            host: HOST_URL,
             displayName: username,
             url: url
         },
@@ -125,7 +126,10 @@ export default class AuthStore extends Reflux.Store {
             query: "login",
             username: username,
             password: password
-        }, false).then(() => {
+        }, false).then((res) => {
+            CookieUtil.setCookie("core-username", username);
+            CookieUtil.setCookie("core-password", password);
+            CookieUtil.setCookie("core-userid", res.data.userId);
             const loginState = getLoginStateFromCookies();
             this.setState(Object.assign(loginState, {
                 isLoggingIn: false,
@@ -147,11 +151,13 @@ export default class AuthStore extends Reflux.Store {
     onHandleLogout() {
         CookieUtil.deleteCookie("core-username");
         CookieUtil.deleteCookie("core-userid");
+        CookieUtil.deleteCookie("core-password");
         this.setState({
             isLoggedIn: false,
             username: null,
             userInfo: null,
             userId: null
         });
+        HomeActions.reloadPosts();
     }
 }

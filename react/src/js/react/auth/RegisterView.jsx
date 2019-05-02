@@ -57,6 +57,7 @@ export default class RegisterView extends Reflux.Component {
                         </Alert>
                     )
                 }
+
                 <CredentialsForm
                     username={this.state.enteredUsername}
                     password={this.state.enteredPassword}

@@ -1,9 +1,17 @@
 .thumbnail {
     .caption {
-        padding: 10px 20px;
+		margin-left: 0.7em;
         .post-header {
             display: flex;
-            justify-content: space-between;
+			justify-content: space-between;
+			.github-title {
+				display: flex;
+				i {
+					font-size: 40px;
+					padding-top: 11px;
+					padding-right: 10px;
+				}
+			}
             .post-time {
                 align-self: center;
                 margin-top: 10px;
@@ -24,12 +32,44 @@
             }
         }
 
-        .post-footer {
-            display: flex;
-            justify-content: flex-start;
-            a {
-                margin: 0 0 0 5px;
-            }
-        }
+		.categories-wrapper {
+			display: flex;
+			flex-wrap: wrap;
+			padding-bottom: 5px;
+			
+			.tag-icon {
+				margin-right: 0.5em;
+				padding-top: 3px;
+			}
+			
+			.category-badge {
+				margin-right: 0.5em;
+				background-color: $primary;
+			}
+		}
+
+		.empty-title {
+			font-style: italic;
+		}
+		
+		.deleting-message {
+			margin-left: 1em;
+		}
+
+		.bottom-row {
+			display: flex;
+
+			.comment-icon {
+				margin-right: 0.7em;
+				padding-top: 3px;
+			}
+			
+			.visibility-details {
+				margin-left: auto;
+				.visibility-text {
+					margin-left: 0.3em;
+				}	
+			}
+		}
     }
 }

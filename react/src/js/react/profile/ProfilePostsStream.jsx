@@ -7,6 +7,11 @@ import ProfileActions from "./ProfileActions";
 import ProfileStore from "./ProfileStore";
 import LoadingComponent from "../misc/LoadingComponent";
 
+import PostFeed from "../posts/PostFeed";
+
+/**
+ * Renders the posts made by the current viewed user that is visible to the authenticated user
+ */
 export default class ProfilePostsStream extends Reflux.Component {
     constructor(props) {
         super(props);
@@ -14,12 +19,20 @@ export default class ProfilePostsStream extends Reflux.Component {
     }
 
     componentDidMount() {
-        ProfileActions.loadActivityStream(this.props.id);
+        if (!this.state.isLoadingStream) {
+            ProfileActions.loadActivityStream(this.props.id);
+        }
     }
 
-    shouldComponentUpdate(prevProps, prevState) {
-        return this.state.posts.length !== prevState.posts.length || this.state.errorLoadingStream !== prevState.errorLoadingStream;
+    componentDidUpdate(prevProps, prevState) {
+        if (this.state.profileDetails.github !== prevState.profileDetails.github) {
+            ProfileActions.loadActivityStream(this.props.id);
+        }
     }
+
+    _loadMorePosts = () => {
+        ProfileActions.loadActivityStream(this.props.id, this.state.nextPage);
+    };
 
     render() {
         if (this.state.errorLoadingStream) {
@@ -28,15 +41,20 @@ export default class ProfilePostsStream extends Reflux.Component {
                     An error occurred while loading the user's activity stream.
                 </Alert>
             );
-        } else if (this.state.isLoadingStream) {
+        } else if (this.state.isLoadingStream && this.state.posts.length === 0) {
             return <LoadingComponent />;
         }
-        // TODO: posts
         return (
-            <div>
-                {
-                    this.state.posts.map((post) => <div>{post.title}</div>)
-                }
+            <div className="posts-background">
+                <PostFeed posts={this.state.posts}
+                    isLoading={this.state.isLoadingStream}
+                    loadMorePosts={this._loadMorePosts}
+                    onDeletePost={ProfileActions.deletePost}
+                    onEditPost={ProfileActions.editPost}
+                    hasNextPage={Boolean(this.state.nextPage)}
+                    errorDeletingPost={this.state.failedToDeletePost}
+                    deletingPost={this.state.deletingPost}
+                />
             </div>
         );
     }

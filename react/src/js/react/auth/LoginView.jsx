@@ -68,7 +68,7 @@ export default class LoginView extends Reflux.Component {
                     password={this.state.enteredPassword}
                     onUsernameChange={this._onUsernameChange}
                     onPasswordChange={this._onPasswordChange}
-                    action="Login"
+                    action="Sign In"
                     onSubmit={this._onSubmit}
                     disableSubmit={this.state.isLoggingIn}
                     switchActionText="Register for a new account"

@@ -37,6 +37,8 @@ SECRET_KEY = 'mtl$5lb%^%=!kk7f^shyp0)^^!+n_y_9&yq10m_tvl1mtz18hs'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+APPEND_SLASH = True
+
 ALLOWED_HOSTS = ["*"] if DEBUG else ['cmput404-i5.herokuapp.com']
 
 # Application definition
@@ -55,7 +57,8 @@ INSTALLED_APPS = [
 
     'core.users',
     'core.authors',
-    'core.posts'
+    'core.posts',
+    'core.servers'
 ]
 
 MIDDLEWARE = [
@@ -92,10 +95,22 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-DATABASES = {
-    'default': env.db('DATABASE_URL', default='postgres://cmput404:abramiscool123!@cmput404-dev.c1dsguk3kuvt.us-west-2.rds.amazonaws.com:5432/404posts'),
-}
+DATABASES = {}
+import sys
+if 'test' in sys.argv:
+    # if using a local DB and manage.py test runner, makes things 100x faster :)
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'social_dist',
+        'USER': 'postgres',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',
+        'PORT': '',
+    }
+else:
+    DATABASES = {
+        'default': env.db('DATABASE_URL',default='postgres://cmput404:abramiscool123!@cmput404-dev.c1dsguk3kuvt.us-west-2.rds.amazonaws.com:5432/riptesting'),
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators

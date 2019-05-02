@@ -5,7 +5,7 @@ import update from "immutability-helper";
 import Actions from "./ProfileActions";
 import RestUtil from "../util/RestUtil";
 import { POSTS_PAGE_SIZE } from "../constants/PostConstants";
-import { isExternalAuthor, getAuthorId } from "../util/AuthorUtil";
+import { isExternalAuthor, getAuthorId, escapeUrl } from "../util/AuthorUtil";
 import FriendsActions from "../friends/FriendsActions";
 
 /**
@@ -16,7 +16,10 @@ export default class ProfileStore extends Reflux.Store {
         super();
         this.state = {
             isLoadingProfile: false,
-            posts: []
+            posts: [],
+            nextPage: null,
+            followedUsers: [],
+            followingUsers: []
         };
         this.listenables = Actions;
 
@@ -44,10 +47,12 @@ export default class ProfileStore extends Reflux.Store {
             githubDetails: null
         });
 
-        // TODO: should external authors be loaded client side or server side?
+        // Profiles from external servers need to be loaded on our back-end,
+        // because some external servers require auth
         const external = isExternalAuthor(id),
-            path = external ? `${id}/` : `author/${getAuthorId(id)}/`;
-        RestUtil.sendGET(path, {}, external).then((res) => {
+            path = external ? `author/external/?authorUrl=${encodeURI(id)}` : `author/${getAuthorId(id)}/`;
+        RestUtil.sendGET(path, {}).then((res) => {
+            console.log(res);
             this.setState({
                 isLoadingProfile: false,
                 successfullyLoadedProfile: true,
@@ -68,31 +73,35 @@ export default class ProfileStore extends Reflux.Store {
      * @param {String} id - the ID of the user
      * @param {number} page - the page number to load data from
      */
-    onLoadActivityStream(id, page) {
-        this.setState({
-            isLoadingStream: true,
-            errorLoadingStream: false
-        });
+    onLoadActivityStream(id, page = 0) {
+        const state = {
+                isLoadingStream: true,
+                errorLoadingStream: false
+            },
+            external = isExternalAuthor(id),
+            path = external ? `author/${escapeUrl(id)}/posts/` : `author/${getAuthorId(id)}/posts/`;
+        if (page === 0) {
+            state.posts = [];
+        }
+        this.setState(state);
 
-        // TODO: should external authors be loaded client side or server side?
-        const external = isExternalAuthor(id),
-            path = external ? `${id}/posts/` : `author/${getAuthorId(id)}/posts/`;
         RestUtil.sendGET(path, {
             page: page,
             size: POSTS_PAGE_SIZE
-        }, external).then((res) => {
+        }).then((res) => {
             const posts = update(this.state.posts, {
                 $push: res.data.posts
             });
             this.setState({
                 isLoadingStream: false,
-                hasNextActivityPage: Boolean(res.data.next),
+                nextPage: res.data.next ? (page + 1) : null,
                 posts: posts
             });
         }).catch((err) => {
             this.setState({
                 isLoadingStream: false,
-                errorLoadingStream: true
+                errorLoadingStream: true,
+                nextPage: null
             });
             console.error(err);
         });
@@ -226,7 +235,8 @@ export default class ProfileStore extends Reflux.Store {
         }).then((res) => {
             this.setState({
                 isFollowingUser: res.data.isFollowingUser,
-                isLoadingFollowStatus: false
+                isLoadingFollowStatus: false,
+                isOtherFollowing: res.data.isOtherFollowing && res.data.isOtherFriendRequest
             });
         }).catch((err) => {
             this.setState({
@@ -248,11 +258,25 @@ export default class ProfileStore extends Reflux.Store {
             requester: requester,
             query: "unfollow"
         }).then(() => {
-            this.setState({
-                isProfileActionDisabled: false,
-                profileActionSuccess: "You are no longer following this user",
-                isFollowingUser: false
-            });
+            const followingIndex = this.state.followingUsers.findIndex((user) => user.id === requester.id),
+                followingUsers = update(this.state.followingUsers, {
+                    $splice: [[followingIndex, 1]]
+                }),
+                friendsIndex = this.state.profileDetails.friends.findIndex((user) => user.id === requester.id),
+                state = {
+                    isProfileActionDisabled: false,
+                    profileActionSuccess: "You are no longer following this user",
+                    isFollowingUser: false,
+                    followingUsers: followingUsers
+                };
+            if (friendsIndex > -1) {
+                state.profileDetails = update(this.state.profileDetails, {
+                    friends: {
+                        $splice: [[friendsIndex, 1]]
+                    }
+                });
+            }
+            this.setState(state);
         }).catch((err) => {
             this.setState({
                 isProfileActionDisabled: false,
@@ -275,11 +299,15 @@ export default class ProfileStore extends Reflux.Store {
         }).then(() => {
             // remove any existing friend request from the other user, because it has technically now been accepted
             FriendsActions.removeFriendRequest(friend);
+            const followingUsers = update(this.state.followingUsers, {
+                $push: [requester]
+            });
             this.setState({
                 isProfileActionDisabled: false,
                 profileActionSuccess: "Your friend request has been sent.",
                 sentFriendRequestToUser: false,
-                isFollowingUser: true
+                isFollowingUser: true,
+                followingUsers: followingUsers
             });
         }).catch((err) => {
             this.setState({
@@ -311,6 +339,74 @@ export default class ProfileStore extends Reflux.Store {
         }).catch((err) => {
             this.setState({
                 errorLoadingGithubRepos: true
+            });
+            console.error(err);
+        });
+    }
+
+    onDeletePost(id, postId) {
+        this.setState({
+            deletingPost: id,
+            failedToDeletePost: false
+        });
+        RestUtil.sendDELETE(`posts/${id}/`).then(() => {
+            const index = this.state.posts.findIndex((post) => post.id === id),
+			 posts = update(this.state.posts, {
+                    $splice: [[index, 1]]
+                });
+            this.setState({
+                posts: posts,
+                deletingPost: false,
+                failedToDeletePost: false
+            });
+        }).catch((err) => {
+            this.setState({
+                deletingPost: false,
+                failedToDeletePost: id
+            });
+            console.error(err);
+        });
+    }
+
+    onEditPost(id, postId) {
+        window.location.href = `post/${id}/edit`;
+    }
+
+    onLoadFollowedUsers(id) {
+        this.setState({
+            isLoadingFollowedUsers: true,
+            failedToLoadFollowed: false,
+            followedUsers: []
+        });
+        RestUtil.sendGET(`author/${id}/followed/`).then((res) => {
+            this.setState({
+                followedUsers: res.data.followed,
+                isLoadingFollowedUsers: false
+            });
+        }).catch((err) => {
+            this.setState({
+                failedToLoadFollowed: true,
+                isLoadingFollowedUsers: false
+            });
+            console.error(err);
+        });
+    }
+
+    onLoadFollowingUsers(id) {
+        this.setState({
+            isLoadingFollowingUsers: true,
+            failedToLoadFollowing: false,
+            followingUsers: []
+        });
+        RestUtil.sendGET(`author/${id}/followers/`).then((res) => {
+            this.setState({
+                followingUsers: res.data.followers,
+                isLoadingFollowingUsers: false
+            });
+        }).catch((err) => {
+            this.setState({
+                failedToLoadFollowing: true,
+                isLoadingFollowingUsers: false
             });
             console.error(err);
         });

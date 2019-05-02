@@ -3,7 +3,6 @@
 	
 	.headerNotifications {
 		font-size: 15pt;
-		transform: rotateZ(38deg);
 	}
 
 	.notificationsBadge > .badge {
@@ -12,12 +11,6 @@
 	}
 }
 
-.bootstrapLink {
-	color: inherit;
-	text-decoration: inherit;
-	
-	&:hover, &:active, &:visited {
-		color: inherit;
-		text-decoration: inherit;
-	}
+.navbar-inverse .navbar-nav>li>a {
+	font-size: 16px;
 }

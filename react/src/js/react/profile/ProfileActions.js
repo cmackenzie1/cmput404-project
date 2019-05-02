@@ -14,7 +14,11 @@ const Actions = Reflux.createActions([
     "loadFollowStatus",
     "unfollowUser",
     "sendFriendRequest",
-    "loadGithubDetails"
+    "loadGithubDetails",
+    "deletePost",
+    "editPost",
+    "loadFollowedUsers",
+    "loadFollowingUsers"
 ]);
 
 export default Actions;

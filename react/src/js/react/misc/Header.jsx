@@ -17,10 +17,13 @@ export default class Header extends React.Component {
                     </Navbar.Brand>
                 </Navbar.Header>
                 <Nav>
-                    <NavItem>
-                        <Link to="/discover" className="bootstrapLink">
-							Discover
-                        </Link>
+                    <NavItem componentClass={Link} href="/discover" to="/discover">
+						Discover Local
+                    </NavItem>
+                </Nav>
+                <Nav>
+                    <NavItem componentClass={Link} href="/travel" to="/travel">
+						Remote Travel
                     </NavItem>
                 </Nav>
                 <HeaderProfileDetails />
